@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#16a34a">
+<title>Merima — 20 lb Goal Tracker</title>
+<style>
+  :root {
+    --green: #16a34a;
+    --green-dark: #15803d;
+    --bg: #f1f5f4;
+    --card: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --red: #dc2626;
+    --amber: #d97706;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  #app-wrap { max-width: 480px; margin: 0 auto; min-height: 100vh; padding-bottom: 76px; }
+  h1 { font-size: 22px; }
+  h2 { font-size: 16px; margin-bottom: 10px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 18px;
+    margin: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+  input, select {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 15px;
+    background: #fff;
+    color: var(--text);
+  }
+  input:focus, select:focus { outline: 2px solid var(--green); border-color: var(--green); }
+  .field { margin-bottom: 14px; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  button {
+    cursor: pointer;
+    font-family: inherit;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .btn-primary {
+    background: var(--green);
+    color: #fff;
+    padding: 13px;
+    width: 100%;
+  }
+  .btn-primary:active { background: var(--green-dark); }
+  .btn-add {
+    background: var(--green);
+    color: #fff;
+    padding: 11px 16px;
+    white-space: nowrap;
+  }
+  .btn-ghost {
+    background: #f3f4f6;
+    color: var(--text);
+    padding: 12px;
+    width: 100%;
+  }
+  .btn-danger { background: #fef2f2; color: var(--red); padding: 12px; width: 100%; }
+  /* header */
+  .topbar {
+    background: linear-gradient(135deg, var(--green), var(--green-dark));
+    color: #fff;
+    padding: 22px 18px 26px;
+    border-radius: 0 0 22px 22px;
+  }
+  .topbar .sub { opacity: 0.9; font-size: 13px; margin-top: 2px; }
+  .stat-strip { display: flex; gap: 10px; margin-top: 16px; }
+  .stat-strip > div {
+    flex: 1;
+    background: rgba(255,255,255,0.16);
+    border-radius: 12px;
+    padding: 10px;
+    text-align: center;
+  }
+  .stat-strip .big { font-size: 20px; font-weight: 700; }
+  .stat-strip .lbl { font-size: 11px; opacity: 0.9; }
+  /* calorie ring */
+  .cal-big { font-size: 40px; font-weight: 800; line-height: 1; }
+  .cal-big.over { color: var(--red); }
+  .progress { height: 12px; background: #eef0f2; border-radius: 99px; overflow: hidden; margin: 12px 0 6px; }
+  .progress > span { display: block; height: 100%; background: var(--green); border-radius: 99px; transition: width .3s; }
+  .progress > span.over { background: var(--red); }
+  .breakdown { display: flex; justify-content: space-between; font-size: 13px; }
+  .breakdown div { text-align: center; flex: 1; }
+  .breakdown .n { font-weight: 700; font-size: 16px; }
+  /* list items */
+  .item {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .item:last-child { border-bottom: none; }
+  .item .name { flex: 1; font-size: 14px; }
+  .item .val { font-weight: 600; font-size: 14px; margin-right: 12px; }
+  .item .x {
+    background: none; color: var(--muted); font-size: 20px;
+    width: 28px; height: 28px; border-radius: 8px; flex: none;
+  }
+  .item .x:active { background: #f3f4f6; }
+  .empty { color: var(--muted); font-size: 13px; padding: 14px 0; text-align: center; }
+  /* nav */
+  .nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    max-width: 480px; margin: 0 auto;
+    background: #fff; border-top: 1px solid var(--line);
+    display: flex;
+  }
+  .nav button {
+    flex: 1; background: none; padding: 10px 0 12px;
+    color: var(--muted); font-size: 11px; font-weight: 600;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  .nav button.active { color: var(--green); }
+  .nav .ico { font-size: 20px; }
+  .tab { display: none; }
+  .tab.active { display: block; }
+  .pill { display: inline-block; padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+  .pill.amber { background: #fef3c7; color: var(--amber); }
+  .pill.green { background: #dcfce7; color: var(--green-dark); }
+  .note {
+    background: #fffbeb; border: 1px solid #fde68a; color: #92400e;
+    border-radius: 10px; padding: 10px 12px; font-size: 12px; margin-top: 12px; line-height: 1.5;
+  }
+  .stat-table { width: 100%; font-size: 14px; }
+  .stat-table td { padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .stat-table td:last-child { text-align: right; font-weight: 600; }
+  .stat-table tr:last-child td { border-bottom: none; }
+  svg { width: 100%; height: auto; display: block; }
+  .add-form { display: flex; gap: 8px; margin-top: 12px; }
+  .add-form input.cal { flex: 0 0 92px; }
+</style>
+</head>
+<body>
+<div id="app-wrap">
+
+  <!-- ===== SETUP ===== -->
+  <div id="setup" style="display:none">
+    <div class="topbar">
+      <h1>Let's build your plan</h1>
+      <div class="sub">A few details to set your daily calorie target.</div>
+    </div>
+    <div class="card">
+      <div class="field">
+        <label>Your name</label>
+        <input id="s-name" type="text" placeholder="Merima">
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Sex</label>
+          <select id="s-sex">
+            <option value="female">Female</option>
+            <option value="male">Male</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Age</label>
+          <input id="s-age" type="number" inputmode="numeric" placeholder="30">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Height (ft)</label>
+          <input id="s-ft" type="number" inputmode="numeric" placeholder="5">
+        </div>
+        <div class="field">
+          <label>Height (in)</label>
+          <input id="s-in" type="number" inputmode="numeric" placeholder="6">
+        </div>
+      </div>
+      <div class="field">
+        <label>Current weight (lbs)</label>
+        <input id="s-weight" type="number" inputmode="decimal" placeholder="180">
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Pounds to lose</label>
+          <input id="s-lose" type="number" inputmode="decimal" value="20">
+        </div>
+        <div class="field">
+          <label>Weeks</label>
+          <input id="s-weeks" type="number" inputmode="numeric" value="8">
+        </div>
+      </div>
+      <div class="field">
+        <label>Activity level</label>
+        <select id="s-activity">
+          <option value="1.2">Sedentary — little/no exercise</option>
+          <option value="1.375" selected>Light — 1-3 days/week</option>
+          <option value="1.55">Moderate — 3-5 days/week</option>
+          <option value="1.725">Active — 6-7 days/week</option>
+          <option value="1.9">Very active — physical job + training</option>
+        </select>
+      </div>
+      <button class="btn-primary" onclick="saveSetup()">Create my plan</button>
+      <p class="muted" style="margin-top:12px;line-height:1.5">
+        This tool gives general estimates, not medical advice. Aggressive goals
+        should ideally be discussed with a healthcare provider.
+      </p>
+    </div>
+  </div>
+
+  <!-- ===== MAIN APP ===== -->
+  <div id="main" style="display:none">
+
+    <!-- TODAY -->
+    <div class="tab active" id="tab-today">
+      <div class="topbar">
+        <h1 id="greeting">Hi there</h1>
+        <div class="sub" id="day-sub">Day 1</div>
+        <div class="stat-strip">
+          <div><div class="big" id="ss-lost">0</div><div class="lbl">lbs lost</div></div>
+          <div><div class="big" id="ss-togo">20</div><div class="lbl">lbs to go</div></div>
+          <div><div class="big" id="ss-streak">0</div><div class="lbl">day streak</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Calories today</h2>
+        <div class="cal-big" id="cal-remaining">0</div>
+        <div class="muted" id="cal-label">calories remaining</div>
+        <div class="progress"><span id="cal-bar"></span></div>
+        <div class="breakdown">
+          <div><div class="n" id="bd-target">0</div>target</div>
+          <div><div class="n" id="bd-eaten">0</div>eaten</div>
+          <div><div class="n" id="bd-burned">0</div>exercise</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Food log</h2>
+        <div id="food-list"></div>
+        <form class="add-form" onsubmit="addFood(event)">
+          <input type="text" id="f-name" placeholder="Food or meal" required>
+          <input type="number" id="f-cal" class="cal" inputmode="numeric" placeholder="kcal" required>
+          <button type="submit" class="btn-add">Add</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Exercise log</h2>
+        <div id="ex-list"></div>
+        <form class="add-form" onsubmit="addExercise(event)">
+          <input type="text" id="e-name" placeholder="Walk, gym, run…" required>
+          <input type="number" id="e-cal" class="cal" inputmode="numeric" placeholder="kcal" required>
+          <button type="submit" class="btn-add">Add</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- WEIGH-IN -->
+    <div class="tab" id="tab-weight">
+      <div class="topbar">
+        <h1>Weigh-in</h1>
+        <div class="sub">Track your progress over time.</div>
+      </div>
+      <div class="card">
+        <h2>Current weight</h2>
+        <div class="cal-big" id="cur-weight">0 <span style="font-size:18px">lbs</span></div>
+        <div class="muted" id="cur-change">no change yet</div>
+      </div>
+      <div class="card">
+        <h2>Log a weigh-in</h2>
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="w-date">
+        </div>
+        <div class="field">
+          <label>Weight (lbs)</label>
+          <input type="number" id="w-val" inputmode="decimal" placeholder="178.5">
+        </div>
+        <button class="btn-primary" onclick="logWeight()">Save weigh-in</button>
+      </div>
+      <div class="card">
+        <h2>History</h2>
+        <div id="weight-list"></div>
+      </div>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="tab" id="tab-progress">
+      <div class="topbar">
+        <h1>Progress</h1>
+        <div class="sub" id="prog-sub">Toward your goal</div>
+      </div>
+      <div class="card">
+        <h2>Weight trend</h2>
+        <div id="chart"></div>
+        <div class="muted" style="margin-top:8px">
+          <span style="color:var(--green)">●</span> your weigh-ins &nbsp;
+          <span style="color:#9ca3af">– – –</span> goal pace
+        </div>
+      </div>
+      <div class="card">
+        <h2>The numbers</h2>
+        <table class="stat-table" id="stat-table"></table>
+        <div id="safety-note"></div>
+      </div>
+      <div class="card">
+        <h2>Manage</h2>
+        <button class="btn-ghost" onclick="editPlan()" style="margin-bottom:10px">Edit my plan</button>
+        <button class="btn-danger" onclick="resetAll()">Reset all data</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- NAV -->
+  <div class="nav" id="nav" style="display:none">
+    <button data-tab="today" class="active" onclick="switchTab('today')">
+      <span class="ico">🍎</span>Today</button>
+    <button data-tab="weight" onclick="switchTab('weight')">
+      <span class="ico">⚖️</span>Weigh-in</button>
+    <button data-tab="progress" onclick="switchTab('progress')">
+      <span class="ico">📈</span>Progress</button>
+  </div>
+
+</div>
+
+<script>
+"use strict";
+const STORE_KEY = "merima-tracker-v1";
+const LB_PER_CAL = 1 / 3500;          // 3500 kcal ≈ 1 lb of fat
+const MIN_CAL = { female: 1200, male: 1500 };
+const ACTIVITY_LABELS = {
+  "1.2": "Sedentary", "1.375": "Light", "1.55": "Moderate",
+  "1.725": "Active", "1.9": "Very active"
+};
+
+let state = { profile: null, logs: {} };
+
+/* ---------- persistence ---------- */
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) state = JSON.parse(raw);
+  } catch (e) { state = { profile: null, logs: {} }; }
+  if (!state.logs) state.logs = {};
+}
+function save() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+
+/* ---------- date helpers ---------- */
+function fmt(d) {
+  return d.getFullYear() + "-" +
+    String(d.getMonth() + 1).padStart(2, "0") + "-" +
+    String(d.getDate()).padStart(2, "0");
+}
+function parseDate(key) { return new Date(key + "T00:00:00"); }
+function todayKey() { return fmt(new Date()); }
+function daysBetween(a, b) {
+  return Math.round((parseDate(b) - parseDate(a)) / 86400000);
+}
+
+/* ---------- log access ---------- */
+function getDay(key) {
+  if (!state.logs[key]) state.logs[key] = { food: [], exercise: [], weight: null };
+  const d = state.logs[key];
+  if (!d.food) d.food = [];
+  if (!d.exercise) d.exercise = [];
+  return d;
+}
+function sum(arr) { return arr.reduce((t, x) => t + (Number(x.cal) || 0), 0); }
+
+/* ---------- calorie science ---------- */
+// Mifflin-St Jeor BMR, then multiply by activity factor for TDEE.
+function tdee(p) {
+  const kg = p.startWeight / 2.2046;
+  const cm = p.heightIn * 2.54;
+  let bmr = 10 * kg + 6.25 * cm - 5 * p.age;
+  bmr += (p.sex === "male") ? 5 : -161;
+  return bmr * p.activity;
+}
+// Daily calorie target to hit the goal in the chosen window.
+function computeTarget(p) {
+  const totalDeficit = p.poundsToLose * 3500;
+  const dailyDeficit = totalDeficit / (p.weeks * 7);
+  const ideal = tdee(p) - dailyDeficit;
+  const floor = MIN_CAL[p.sex];
+  return { ideal: Math.round(ideal), floor, target: Math.round(Math.max(ideal, floor)) };
+}
+
+/* ---------- setup ---------- */
+function saveSetup() {
+  const v = id => document.getElementById(id).value;
+  const ft = parseFloat(v("s-ft")) || 0;
+  const inch = parseFloat(v("s-in")) || 0;
+  const heightIn = ft * 12 + inch;
+  const weight = parseFloat(v("s-weight"));
+  const lose = parseFloat(v("s-lose"));
+  const weeks = parseInt(v("s-weeks"), 10);
+  const age = parseInt(v("s-age"), 10);
+
+  if (!weight || !lose || !weeks || !age || !heightIn) {
+    alert("Please fill in every field with valid numbers.");
+    return;
+  }
+  const existing = state.profile;
+  const profile = {
+    name: v("s-name").trim() || "there",
+    sex: v("s-sex"),
+    age: age,
+    heightIn: heightIn,
+    startWeight: weight,
+    poundsToLose: lose,
+    goalWeight: weight - lose,
+    weeks: weeks,
+    activity: parseFloat(v("s-activity")),
+    startDate: existing ? existing.startDate : todayKey()
+  };
+  const t = computeTarget(profile);
+  profile.calorieTarget = t.target;
+  state.profile = profile;
+  // record the starting weight as the first weigh-in
+  getDay(profile.startDate).weight = weight;
+  save();
+  showMain();
+}
+
+function editPlan() {
+  const p = state.profile;
+  document.getElementById("s-name").value = p.name === "there" ? "" : p.name;
+  document.getElementById("s-sex").value = p.sex;
+  document.getElementById("s-age").value = p.age;
+  document.getElementById("s-ft").value = Math.floor(p.heightIn / 12);
+  document.getElementById("s-in").value = Math.round(p.heightIn % 12);
+  document.getElementById("s-weight").value = p.startWeight;
+  document.getElementById("s-lose").value = p.poundsToLose;
+  document.getElementById("s-weeks").value = p.weeks;
+  document.getElementById("s-activity").value = p.activity;
+  document.getElementById("main").style.display = "none";
+  document.getElementById("nav").style.display = "none";
+  document.getElementById("setup").style.display = "block";
+  window.scrollTo(0, 0);
+}
+
+function resetAll() {
+  if (!confirm("Delete all your data and start over? This cannot be undone.")) return;
+  localStorage.removeItem(STORE_KEY);
+  state = { profile: null, logs: {} };
+  location.reload();
+}
+
+/* ---------- navigation ---------- */
+function showMain() {
+  document.getElementById("setup").style.display = "none";
+  document.getElementById("main").style.display = "block";
+  document.getElementById("nav").style.display = "flex";
+  document.getElementById("w-date").value = todayKey();
+  renderAll();
+  window.scrollTo(0, 0);
+}
+function switchTab(name) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.getElementById("tab-" + name).classList.add("active");
+  document.querySelectorAll(".nav button").forEach(b =>
+    b.classList.toggle("active", b.dataset.tab === name));
+  renderAll();
+  window.scrollTo(0, 0);
+}
+
+/* ---------- food / exercise ---------- */
+function addFood(e) {
+  e.preventDefault();
+  const name = document.getElementById("f-name").value.trim();
+  const cal = Math.round(parseFloat(document.getElementById("f-cal").value));
+  if (!name || !cal) return;
+  getDay(todayKey()).food.push({ name, cal });
+  save();
+  document.getElementById("f-name").value = "";
+  document.getElementById("f-cal").value = "";
+  renderToday();
+}
+function addExercise(e) {
+  e.preventDefault();
+  const name = document.getElementById("e-name").value.trim();
+  const cal = Math.round(parseFloat(document.getElementById("e-cal").value));
+  if (!name || !cal) return;
+  getDay(todayKey()).exercise.push({ name, cal });
+  save();
+  document.getElementById("e-name").value = "";
+  document.getElementById("e-cal").value = "";
+  renderToday();
+}
+function removeFood(i) { getDay(todayKey()).food.splice(i, 1); save(); renderToday(); }
+function removeExercise(i) { getDay(todayKey()).exercise.splice(i, 1); save(); renderToday(); }
+
+/* ---------- weigh-in ---------- */
+function logWeight() {
+  const date = document.getElementById("w-date").value;
+  const val = parseFloat(document.getElementById("w-val").value);
+  if (!date || !val) { alert("Enter a date and weight."); return; }
+  getDay(date).weight = val;
+  save();
+  document.getElementById("w-val").value = "";
+  renderAll();
+}
+function deleteWeight(key) {
+  if (key === state.profile.startDate) {
+    alert("The starting weigh-in can't be deleted. Edit your plan instead.");
+    return;
+  }
+  if (state.logs[key]) state.logs[key].weight = null;
+  save();
+  renderWeight();
+  renderProgress();
+}
+
+/* ---------- derived data ---------- */
+function weighIns() {
+  return Object.keys(state.logs)
+    .filter(k => state.logs[k].weight != null)
+    .sort()
+    .map(k => ({ date: k, weight: state.logs[k].weight }));
+}
+function currentWeight() {
+  const w = weighIns();
+  return w.length ? w[w.length - 1].weight : state.profile.startWeight;
+}
+function logStreak() {
+  let streak = 0;
+  let d = new Date();
+  const has = k => state.logs[k] && state.logs[k].food && state.logs[k].food.length > 0;
+  if (!has(todayKey())) d.setDate(d.getDate() - 1);
+  while (has(fmt(d))) { streak++; d.setDate(d.getDate() - 1); }
+  return streak;
+}
+
+/* ---------- rendering ---------- */
+function renderAll() { renderToday(); renderWeight(); renderProgress(); }
+
+function renderToday() {
+  const p = state.profile;
+  const day = getDay(todayKey());
+  const eaten = sum(day.food);
+  const burned = sum(day.exercise);
+  const remaining = p.calorieTarget - eaten + burned;
+  const over = remaining < 0;
+
+  document.getElementById("greeting").textContent = "Hi " + p.name;
+  const dayNum = daysBetween(p.startDate, todayKey()) + 1;
+  document.getElementById("day-sub").textContent =
+    "Day " + dayNum + " of " + (p.weeks * 7);
+
+  const lost = Math.max(0, p.startWeight - currentWeight());
+  const toGo = Math.max(0, currentWeight() - p.goalWeight);
+  document.getElementById("ss-lost").textContent = lost.toFixed(1);
+  document.getElementById("ss-togo").textContent = toGo.toFixed(1);
+  document.getElementById("ss-streak").textContent = logStreak();
+
+  const calEl = document.getElementById("cal-remaining");
+  calEl.textContent = Math.abs(remaining);
+  calEl.classList.toggle("over", over);
+  document.getElementById("cal-label").textContent =
+    over ? "calories over budget" : "calories remaining";
+
+  const pct = Math.min(100, (eaten / (p.calorieTarget + burned)) * 100);
+  const bar = document.getElementById("cal-bar");
+  bar.style.width = pct + "%";
+  bar.classList.toggle("over", over);
+
+  document.getElementById("bd-target").textContent = p.calorieTarget;
+  document.getElementById("bd-eaten").textContent = eaten;
+  document.getElementById("bd-burned").textContent = burned;
+
+  renderList("food-list", day.food, "removeFood", "No food logged yet today.");
+  renderList("ex-list", day.exercise, "removeExercise", "No exercise logged yet today.");
+}
+
+function renderList(elId, items, removeFn, emptyMsg) {
+  const el = document.getElementById(elId);
+  if (!items.length) { el.innerHTML = '<div class="empty">' + emptyMsg + "</div>"; return; }
+  el.innerHTML = items.map((it, i) =>
+    '<div class="item"><span class="name">' + escapeHtml(it.name) + "</span>" +
+    '<span class="val">' + it.cal + " kcal</span>" +
+    '<button class="x" onclick="' + removeFn + "(" + i + ')">&times;</button></div>'
+  ).join("");
+}
+
+function renderWeight() {
+  const p = state.profile;
+  const cur = currentWeight();
+  document.getElementById("cur-weight").innerHTML =
+    cur.toFixed(1) + ' <span style="font-size:18px">lbs</span>';
+  const change = cur - p.startWeight;
+  const changeEl = document.getElementById("cur-change");
+  if (Math.abs(change) < 0.05) {
+    changeEl.textContent = "no change yet";
+  } else {
+    changeEl.textContent =
+      (change < 0 ? "▼ " : "▲ ") + Math.abs(change).toFixed(1) +
+      " lbs since you started";
+  }
+
+  const list = weighIns().slice().reverse();
+  const el = document.getElementById("weight-list");
+  if (!list.length) { el.innerHTML = '<div class="empty">No weigh-ins yet.</div>'; return; }
+  el.innerHTML = list.map((w, idx) => {
+    const prev = list[idx + 1];
+    let delta = "";
+    if (prev) {
+      const d = w.weight - prev.weight;
+      delta = '<span class="muted" style="margin-right:12px">' +
+        (d <= 0 ? "▼" : "▲") + Math.abs(d).toFixed(1) + "</span>";
+    }
+    const dateLabel = parseDate(w.date).toLocaleDateString(undefined,
+      { month: "short", day: "numeric" });
+    return '<div class="item"><span class="name">' + dateLabel + "</span>" +
+      delta +
+      '<span class="val">' + w.weight.toFixed(1) + " lbs</span>" +
+      '<button class="x" onclick="deleteWeight(\'' + w.date + '\')">&times;</button></div>';
+  }).join("");
+}
+
+function renderProgress() {
+  const p = state.profile;
+  const cur = currentWeight();
+  const lost = p.startWeight - cur;
+  const pctDone = Math.min(100, Math.max(0,
+    (lost / p.poundsToLose) * 100));
+  document.getElementById("prog-sub").textContent =
+    pctDone.toFixed(0) + "% of the way to your goal";
+
+  // projected finish date at current average pace
+  const dayNum = Math.max(1, daysBetween(p.startDate, todayKey()));
+  const ratePerDay = lost / dayNum;
+  let projection = "—";
+  if (ratePerDay > 0.001) {
+    const daysLeft = (cur - p.goalWeight) / ratePerDay;
+    const proj = new Date();
+    proj.setDate(proj.getDate() + Math.round(daysLeft));
+    projection = proj.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  }
+  const goalDate = parseDate(p.startDate);
+  goalDate.setDate(goalDate.getDate() + p.weeks * 7);
+
+  const t = computeTarget(p);
+  document.getElementById("stat-table").innerHTML = [
+    ["Starting weight", p.startWeight.toFixed(1) + " lbs"],
+    ["Current weight", cur.toFixed(1) + " lbs"],
+    ["Goal weight", p.goalWeight.toFixed(1) + " lbs"],
+    ["Lost so far", lost.toFixed(1) + " lbs"],
+    ["Daily calorie target", p.calorieTarget + " kcal"],
+    ["Maintenance (TDEE)", Math.round(tdee(p)) + " kcal"],
+    ["Activity level", ACTIVITY_LABELS[String(p.activity)] || "—"],
+    ["Target date", goalDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })],
+    ["Projected at current pace", projection]
+  ].map(r => "<tr><td>" + r[0] + "</td><td>" + r[1] + "</td></tr>").join("");
+
+  // safety note when the goal pace would push below a safe calorie floor
+  const noteEl = document.getElementById("safety-note");
+  if (t.ideal < t.floor) {
+    const realisticLbs = ((tdee(p) - t.floor) * LB_PER_CAL * p.weeks * 7);
+    noteEl.className = "note";
+    noteEl.innerHTML = "Hitting " + p.poundsToLose + " lbs in " + p.weeks +
+      " weeks would need about " + t.ideal + " kcal/day — below a safe minimum, " +
+      "so your target is set to " + t.floor + " kcal. At that floor you'd lose " +
+      "roughly <b>" + realisticLbs.toFixed(0) + " lbs</b> in this window. " +
+      "Consider a longer timeline, and talk to a healthcare provider about " +
+      "aggressive goals.";
+  } else {
+    noteEl.className = "";
+    noteEl.innerHTML = "";
+  }
+
+  drawChart();
+}
+
+/* ---------- SVG chart ---------- */
+function drawChart() {
+  const p = state.profile;
+  const W = 320, H = 200;
+  const pad = { l: 38, r: 14, t: 14, b: 26 };
+  const plotW = W - pad.l - pad.r;
+  const plotH = H - pad.t - pad.b;
+
+  const start = parseDate(p.startDate);
+  const end = parseDate(p.startDate);
+  end.setDate(end.getDate() + p.weeks * 7);
+  const span = Math.max(1, (end - start));
+
+  const pts = weighIns();
+  const allW = [p.startWeight, p.goalWeight].concat(pts.map(w => w.weight));
+  let minW = Math.min.apply(null, allW);
+  let maxW = Math.max.apply(null, allW);
+  const padW = Math.max(1, (maxW - minW) * 0.12);
+  minW -= padW; maxW += padW;
+
+  const x = d => pad.l + ((parseDate(d) - start) / span) * plotW;
+  const y = w => pad.t + ((maxW - w) / (maxW - minW)) * plotH;
+
+  let svg = '<svg viewBox="0 0 ' + W + " " + H + '" xmlns="http://www.w3.org/2000/svg">';
+
+  // y gridlines + labels
+  for (let i = 0; i <= 3; i++) {
+    const wv = minW + (maxW - minW) * (i / 3);
+    const yy = y(wv);
+    svg += '<line x1="' + pad.l + '" y1="' + yy + '" x2="' + (W - pad.r) +
+      '" y2="' + yy + '" stroke="#eef0f2"/>';
+    svg += '<text x="' + (pad.l - 6) + '" y="' + (yy + 3) +
+      '" font-size="9" fill="#9ca3af" text-anchor="end">' + wv.toFixed(0) + "</text>";
+  }
+
+  // goal-pace dashed line
+  svg += '<line x1="' + x(p.startDate) + '" y1="' + y(p.startWeight) +
+    '" x2="' + x(fmt(end)) + '" y2="' + y(p.goalWeight) +
+    '" stroke="#9ca3af" stroke-width="2" stroke-dasharray="5 4"/>';
+
+  // actual weigh-in line + dots
+  if (pts.length) {
+    const path = pts.map((w, i) =>
+      (i ? "L" : "M") + x(w.date) + " " + y(w.weight)).join(" ");
+    svg += '<path d="' + path + '" fill="none" stroke="#16a34a" stroke-width="2.5" ' +
+      'stroke-linejoin="round" stroke-linecap="round"/>';
+    pts.forEach(w => {
+      svg += '<circle cx="' + x(w.date) + '" cy="' + y(w.weight) +
+        '" r="3.5" fill="#16a34a"/>';
+    });
+  }
+
+  // x-axis end labels
+  svg += '<text x="' + pad.l + '" y="' + (H - 8) +
+    '" font-size="9" fill="#9ca3af">start</text>';
+  svg += '<text x="' + (W - pad.r) + '" y="' + (H - 8) +
+    '" font-size="9" fill="#9ca3af" text-anchor="end">goal</text>';
+
+  svg += "</svg>";
+  document.getElementById("chart").innerHTML = svg;
+}
+
+/* ---------- util ---------- */
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
+}
+
+/* ---------- boot ---------- */
+load();
+if (state.profile) {
+  showMain();
+} else {
+  document.getElementById("setup").style.display = "block";
+}
+</script>
+</body>
+</html>
